@@ -1,0 +1,817 @@
+﻿<HEAD>
+   <TITLE>Registro primera vez</TITLE>
+   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+</HEAD>
+<span><p>
+</span>
+<p>
+<?
+	$HoraActual=date("h:i A");
+	$FechaActual=date("d/m/Y");
+	$NombreConsejero=RevisaSesion($Sesion, "identidad");
+?>
+<script>
+var timerID = null;
+var timerRunning = false;
+var ts=0;
+
+function validar(){
+	camposTexto = forma.elements;
+	v=0;	
+	for (x=0;x<camposTexto.length;x++) {
+		if(camposTexto[x].type=='checkbox')
+			if(camposTexto[x].checked)
+				v=1;
+		}
+	
+	if(v==0)
+		alert("Faltan motivos de llamada");
+
+	if(forma.Nombre.value==""){
+		alert("Falta el nombre");
+		v=0;
+		}
+	if(forma.medio.value == ""){
+		alert("Falta medio");
+		v=0;
+		}
+	if(v==0)
+		return false;
+		else
+		  	return true;
+	}
+
+function changeCP(formulario){
+   with (document.forms[formulario]){
+      var cp = CP.value; 
+      $('#Estado').html('<option value="">Cargando...</option>'); 
+      $('#Municipio').html('<option value="">Cargando...</option>'); 
+      $('#Colonia').html('<option value="">Cargando...</option>'); 
+      $.ajax({
+            url:"funciones/procesa.php",
+            type:"POST",
+            data:'CP='+cp,
+            success: function(data){
+               var n=data.indexOf("|",0);
+               if (n>0){
+                  var m=data.indexOf("|",n+1);
+                  $('#Estado').html(data.substr(0,n));
+                  $('#Municipio').html(data.substr(n+1,m-n));
+                  $('#Colonia').html(data.substr(m+1));
+                  }
+                  else{
+                     $('#Estado').html('<option value="">-</option>'+data);
+                     $('#Municipio').html(''); 
+                     $('#Colonia').html(''); 
+                     }
+               }
+          });
+      }
+   }
+
+function changeEstado(formulario){
+   with (document.forms[formulario]){
+      var estado = Estado.value; 
+      $('#CP').val(''); 
+      $('#Municipio').html('<option value="">Cargando...</option>'); 
+      $('#Colonia').html(''); 
+      $.ajax({
+            url:"funciones/procesa.php",
+            type:"POST",
+            data:'Estado='+estado,
+            success: function(data){
+               $('#Municipio').html('<option value="">-</option>'+data);
+               }
+          });
+      }
+   }
+
+function changeMunicipio(formulario){
+   with (document.forms[formulario]){
+      $('#CP').val(''); 
+      $('#Colonia').html('<option value="">Cargando...</option>'); 
+      $.ajax({
+            url:"funciones/procesa.php",
+            type:"POST",
+            data: { Municipio : Municipio.value, Estado : Estado.value },
+            success: function(data){
+               $('#Colonia').html('<option value="">-</option>'+data);
+               }
+          });
+      }
+   }
+
+function changeColonia(formulario){
+   with (document.forms[formulario]){
+      $('#CP').val(''); 
+      $.ajax({
+            url:"funciones/procesa.php",
+            type:"POST",
+            data: { Colonia:Colonia.value, Municipio : Municipio.value, Estado : Estado.value },
+            success: function(data){
+               $('#CP').val(data);
+               }
+          });
+      }
+   }
+
+
+function rellenaMedios(formulario){
+		with (document.forms[formulario]){
+			var idmedio2;
+			var idmedio = medio[medio.selectedIndex].value; 
+         var n = medio2.length;  
+			medio2.disabled = false; 
+			for (var i = 0; i < n; ++i)
+				medio2.remove(medio2.options[i]); 
+			medio2[0] = new Option("-", ""); 
+			if (idmedio != ""){
+		  		<?php  
+					include("Datos_Comunicacion.php");
+					$sql ="select * from campos where Tipo = 'ComoTeEnteraste' AND Activo = 1 AND Nombre like '%-%'";
+					$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+			     	while ($row = mysql_fetch_array($total_result)){
+						$MedioNombre = $row["Nombre"];
+						?>
+					idmedio2="<?php echo $MedioNombre;?>";
+					if(idmedio2.search(idmedio)!=-1){
+						medio2[medio2.length] = new Option( "<?php echo("$MedioNombre"); ?>", "<?php echo ("$MedioNombre");?>");
+						}
+						<?php
+						}
+						?>
+				}
+			}
+		}
+function rellenaCanaLegal(formulario){
+		with (document.forms[formulario]){
+			var str = CanaLegal.value = selLegal[selLegal.selectedIndex].value; 
+			if (str.search("Voluntario")>=0) Voluntario.checked = true; else Voluntario.checked = false;
+			if (str.search("-")>=0) CanaLegal.disabled = false; else CanaLegal.disabled = true;
+			CanaLegal.focus();
+			}
+		}
+
+function stopclock (){
+        if(timerRunning)
+                clearTimeout(timerID);
+        timerRunning = false;
+}
+
+function showtime () {
+        var now = new Date();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds()
+        var timeValue = "" + ((hours >12) ? hours -12 :hours)
+	var mina=0;
+        timeValue += ((minutes < 10) ? ":0" : ":") + minutes
+        timeValue += ((seconds < 10) ? ":0" : ":") + seconds
+        timeValue += (hours >= 12) ? " P.M." : " A.M."
+        window.status = timeValue;
+	if(ts==0)
+		ts=1;
+	if(mina!=minutes){
+		ts=ts+1;
+		mina=minutes;
+		}
+	if(ts==1801){
+		alert('Se han excedido los 30 minutos!!!');
+		}
+	if(ts==2401){
+		alert('Se han excedido 40 minutos!!!');
+		}
+	if(ts==3000){
+		alert('50 minutos!!!');
+		}
+	if(ts>3600){
+		alert('Terminar Llamada (1 hora)');
+		ts=ts-10;
+		}
+	timerID = setTimeout("showtime()",1000);
+	timerRunning = true;
+
+	}
+function startclock () {
+        stopclock();
+        showtime();
+}
+function isNumberKey(evt) {
+    var charCode = (evt.which) ? evt.which : event.keyCode;
+    if (charCode != 46 && charCode > 31
+    && (charCode < 48 || charCode > 57))
+        return false;
+    return true;
+}
+function showfield(name){
+  if (name=='Otra') document.getElementById('otraAutoridadReportada').style.display = 'inline';
+    else document.getElementById('otraAutoridadReportada').style.display = 'none';
+}
+
+startclock();
+</script>
+<span BGCOLOR="#FFFFFF" LINK="#000000" ALINK="#000000" VLINK="#000000"><p>
+<CENTER><BR>
+<FORM id="forma" ACTION="" METHOD=POST name=forma onSubmit="return validar();">
+   <CENTER><TABLE BORDER=0 BGCOLOR="#EEEEEE" CELLSPACING=0 CELLPADDING=0 WIDTH=630>
+      <TR>
+         <TD>
+            <P><TABLE BORDER=0 BGCOLOR="#EEEEEE" WIDTH="100%">
+               <TR>
+                  <TD VALIGN=top WIDTH="50%" BGCOLOR="#FFFFFF">
+                     <P><FONT SIZE="-1" COLOR="#c978ff">
+                     <TABLE BORDER=0 WIDTH="100%">
+                        <THEAD>
+                           <TR>
+                              <TH align="center" colspan="4">
+                                 <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">Datos del que llama</FONT>
+                              </TH>
+                           </TR>   
+                        </THEAD>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><p><B>Nombre</B></P></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Genero</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Edad</B></FONT>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><INPUT TYPE="text" ID="Nombre" NAME="Nombre" VALUE="" SIZE="35" MAXLENGTH="255"></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">
+                              <input type="radio" name="Sexo" value="F" checked>Femenino
+                              <input type="radio" name="Sexo" value="M">Masculino
+                              </FONT>
+                           </TD>
+                           <TD>
+                              <input type="number" id="Edad" name="Edad" placeholder="A&ntilde;os" min="0" max="99" onkeypress="return isNumberKey(event)">
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Nivel de estudios</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Estado Civil</B></FONT>
+                           </TD>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Tel&eacute;fono</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <select size="1" name="NivelEstudios">
+                                <option selected>-</option>
+                                <option>Analfabeta</option>
+                                <option>Primaria</option>
+                                <option>Secundaria</option>
+                                <option>Preparatoria</option>
+                                <option>Carrera T&eacute;cnica</option>
+                                <option>Carrera Universitaria</option>
+                                <option>Posgrado</option>
+                              </select>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><SELECT NAME=EstadoCivil>
+                                 <OPTION>
+                                 <OPTION VALUE=Soltera>Soltera
+                                 <OPTION VALUE=Divorciada>Divorciada
+                                 <OPTION VALUE=Viuda>Viuda
+                                 <OPTION VALUE=Casada>Casada
+                                 <OPTION VALUE=Separada>Separada
+                                 <OPTION VALUE=Concubinato>Concubinato
+                                 <OPTION VALUE="Union Libre">Union Libre
+                              </SELECT></FONT>
+                           </TD>
+                             <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><INPUT TYPE=text NAME=Telefono VALUE="" SIZE=19 MAXLENGTH=30></FONT>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>¿Se ha reportado este problema a una autoridad educativa? ¿A cuál?</B></FONT></P>
+                           </TD>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>¿Quién se pone en contacto?</B></FONT></P>
+                           </TD>
+                            <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Correo Electronico</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <select size="1" name="AutoridadReportada" onchange="showfield(this.options[this.selectedIndex].value)">
+                                <option>-</option>
+                                <option>No se ha reportado</option>
+                                <option>Director</option>
+                                <option>Maestro</option>
+                                <option>Prefecto</option>
+                                <option>Psicólogo escolar</option>
+                                <option>SEP</option>
+				                        <option value="Otra">Otra:</option>
+                              </select>
+			                     <div id="otraAutoridadReportada" style="display:none;"><input type="text" name="AutoridadReportada2" id="AutoridadReportada2" VALUE=""/></div>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><SELECT NAME=QuienContacta>
+                                    <option>-</option>
+                                    <OPTION>Madre</option>
+                                    <OPTION>Padre</option>
+                                    <OPTION>Maestro</option>
+                                    <OPTION>Hermano</option>
+                                    <OPTION>Victima</option>
+                                    <OPTION>Testigo</option>
+                                    <OPTION>Bully</option>
+                                    <OPTION>Otros</option>
+                              </SELECT></FONT>
+                          </TD>
+                          <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><INPUT TYPE=text NAME=CorreoElectronico VALUE="" SIZE=19 MAXLENGTH=30></FONT>
+                           </TD>
+                        </TR>
+                     </table>
+                     <TABLE WIDTH="100%">
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Codigo Postal</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Entidad</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Delegaci&oacute;n o Municipio</B></FONT>                              
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Colonia</B></FONT>                              
+                           </TD>                           
+                        </TR>
+                        <TR>
+                           <TD>
+                              <INPUT TYPE=text id="CP" NAME="CP" VALUE="" SIZE=6 MAXLENGTH=5 ONCHANGE="changeCP('forma');">
+                           </TD>
+                           <TD>
+                              <select size="1" name="Estado" id="Estado" ONCHANGE="changeEstado('forma');">
+                                 <?
+                                    $sql ="select Estado from catalogocp group by Estado";
+                                    $estados='<option value="">-</option>';
+                                    $total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+                                    while ($row = mysql_fetch_array($total_result)){
+                                       $estados.= '<option>'.$row["Estado"].'</option>';
+                                       }
+                                    echo $estados;
+                                 ?>
+                              </select>
+                           </TD>
+                           <TD>
+                              <select size="1" name="Municipio" id="Municipio" ONCHANGE="changeMunicipio('forma');">
+                              </select>
+                           </TD>
+                           <TD>
+                              <select size="1" name="Colonia" id="Colonia" onchange="changeColonia('forma')">
+                              </select>
+                           </TD>
+                        </TR> 
+                        </TABLE>
+                      <TABLE width="100%"> 
+                        <THEAD>
+                           <TR>
+                              <TH align="center" colspan="4">
+                                 <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">Datos de la Victima</FONT>
+                              </TH>
+                           </TR>   
+                        </THEAD>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><p><B>¿Con quien vive?</B></P></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Genero</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Edad</B></FONT>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                                <FONT SIZE="-1" COLOR="#AAAAAA"><SELECT NAME=VivesCon>
+                                    <OPTION>Solo</option>
+                                    <OPTION>Padres</option>
+                                    <OPTION>Pareja</option>
+                                    <OPTION selected>Familia</option>
+                                    <OPTION>Hijos</option>
+                                    <OPTION>Padre</option>
+                                    <OPTION>Madre</option>
+                                    <OPTION>Otros</option>
+                              </SELECT></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">
+                              <input type="radio" name="GeneroVictima" value="F" checked>Femenino
+                              <input type="radio" name="GeneroVictima" value="M">Masculino
+                              </FONT>
+                           </TD>
+                           <TD>
+                              <input type="number" id="EdadVictima" name="EdadVictima" placeholder="A&ntilde;os" min="0" max="99" onkeypress="return isNumberKey(event)">
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Grado</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Zona Escolar</B></FONT>
+                           </TD>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Medio de Contacto</br> (Telefono y/o Correo)</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <select size="1" name="Grado">
+                                <option selected>-</option>
+                                <option>Preescolar</option>
+                                <option>1º de Primaria</option>
+                                <option>2º de Primaria</option>
+                                <option>3º de Primaria</option>
+                                <option>4º de Primaria</option>
+                                <option>5º de Primaria</option>
+                                <option>6º de Primaria</option>
+                                <option>1º de Secundaria</option>
+                                <option>2º de Secundaria</option>
+                                <option>3º de Secundaria</option>
+                                <option>1º año de Bachillerato</option>
+                                <option>2º año de Bachillerato</option>
+                                <option>3º año de Bachillerato</option>
+                                <option>Licenciatura o Posgrado</option>
+                              </select>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><INPUT TYPE=text NAME="ZonaEscolar" VALUE="" SIZE=19 MAXLENGTH=30></FONT>
+                           </TD>
+                             <TD>
+                              <FONT SIZE="-1" COLOR="#c978ff"><INPUT TYPE=text NAME="MedioContacto" VALUE="" SIZE=19 MAXLENGTH=30></FONT>
+                           </TD>
+                        </TR>
+                     </TABLE>
+                     <TABLE width="100%"> 
+                        <THEAD>
+                           <TR>
+                              <TH align="center" colspan="4">
+                                 <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">Datos del Bully</FONT>
+                              </TH>
+                           </TR>   
+                        </THEAD>
+                        <TR>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><p><B>¿Relación con la victima?</B></P></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Genero</B></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Edad</B></FONT>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                                <FONT SIZE="-1" COLOR="#AAAAAA"><SELECT NAME=RelacionVictima>
+                                    <OPTION>Ninguna</option>
+                                    <OPTION>Herman@</option>
+                                    <OPTION>Amig@</option>
+                                    <OPTION selected>Compañer@</option>
+                                    <OPTION>Prim@</option>
+                                    <OPTION>Otro Familiar</option>
+                                    <OPTION>Vecino</option>
+                                    <OPTION>Otros</option>
+                              </SELECT></FONT>
+                           </TD>
+                           <TD>
+                              <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">
+                              <input type="radio" name="GeneroBully" value="F" checked>Femenino
+                              <input type="radio" name="GeneroBully" value="M">Masculino
+                              </FONT>
+                           </TD>
+                           <TD>
+                                 <FONT SIZE="-1" COLOR="#AAAAAA"><SELECT NAME="EdadBully">
+                                    <OPTION>Menor al de la Victima</option>
+                                    <OPTION selected>Iguas al de la Victima</option>
+                                    <OPTION>Mayor al de la Victima</option>
+                              </SELECT></FONT>
+                           </TD>
+                        </TR>                        
+
+                        
+                     </TABLE>
+                     <TABLE width="100%">
+                         <THEAD>
+                           <TR>
+                              <TH align="center" colspan="4">
+                                 <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">Informaci&oacute;n de la llamada</FONT>
+                              </TH>
+                           </TR>   
+                        </THEAD>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Como te enteraste</B></FONT></P>
+                           </TD>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Motivo de llamada</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                        <TD BGCOLOR="#FFFFFF">
+                           <select name="medio" onChange="rellenaMedios('forma');" id="Medio">
+                             <option value="">-
+                             	<? 
+                           include("Datos_Comunicacion.php");
+                           $sql ="select * from campos where Tipo = 'ComoTeEnteraste' AND Activo = 1 AND NOT(Nombre LIKE '%-%') ORDER BY Nombre ASC";
+                           $total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+                           $total_found = @mysql_num_rows($total_result);
+                           $i=1;
+                           while ($row = mysql_fetch_array($total_result)){
+                           	$Nombre=$row['Nombre'];
+                           	echo '<OPTION VALUE="'.$Nombre.'":>'.$Nombre;
+                           	$i=$i+1;
+                           	}
+                           ?>
+                           </select>
+                           <P>
+                           <select name="medio2" disabled>
+                              <option value="">-
+                           </select>
+                           <FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Otros:</B></FONT>
+                           <INPUT TYPE=text NAME=OtrosEnteraste VALUE="" SIZE=19><BR>
+                           </FONT></P>
+                           </TD>
+                           <TD VALIGN=top>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><TEXTAREA NAME="MotivoLlamada" ROWS=5 COLS=38 WRAP=virtual></TEXTAREA></FONT></P>
+                           </TD>
+                        </TR>
+                     </TABLE>
+                      </FONT><FONT SIZE="-1"> </FONT>
+                  </TD>
+                  <TD VALIGN=top WIDTH="50%" BGCOLOR="#FFFFFF">
+                     <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><TABLE BORDER=0 WIDTH="100%">
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Nombre de la consejera</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><!--NOEDIT--><?echo $NombreConsejero;?><!--/NOEDIT-->
+					<INPUT TYPE=hidden NAME=Consejera VALUE="<? echo $NombreConsejero;?>">
+					<INPUT TYPE=hidden NAME=AccionSec VALUE=Registrar>
+					<INPUT TYPE=hidden NAME=LlamadaNo VALUE=1></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Fecha</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><INPUT TYPE=hidden NAME=FechaLlamada VALUE="<? echo $FechaActual;?>"><!--NOEDIT--><? echo $FechaActual;?><!--/NOEDIT--></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Hora de inicio</B></FONT></P>
+                           </TD>
+                        </TR>
+                        <TR>
+                           <TD>
+                              <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><INPUT TYPE=hidden NAME=HoraInicio VALUE="<? echo $HoraActual;?>">
+                                <? echo $HoraActual;?></FONT></P>
+                           </TD>
+                        </TR>
+
+
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Objetivo</B></FONT></P></TD></TR>
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><TEXTAREA NAME="Objetivo" ROWS=5 COLS=38 WRAP=virtual></TEXTAREA></FONT></P></TD></TR>
+
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>&iquest;Qu&eacute; tendr&iacute;a que pasar en esta llamada para saber que te fue de utilidad?</B></FONT></P></TD></TR>
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><TEXTAREA NAME="Utilidad" ROWS=5 COLS=38 WRAP=virtual></TEXTAREA></FONT></P></TD></TR>
+
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Recursos y fortalezas</B></FONT></P></TD></TR>
+<TR><TD><P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><TEXTAREA NAME="Recursos" ROWS=5 COLS=38 WRAP=virtual></TEXTAREA></FONT></P></TD></TR>
+
+
+                     </TABLE>
+                      </FONT>
+                  </TD>
+               </TR>
+            </TABLE>
+
+
+<FONT FACE="Arial"><TABLE BORDER=0 BGCOLOR="#EEEEEE" WIDTH="100%">
+
+       <THEAD>
+               <TR>
+                  <TH> 
+                     <CENTER><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>PSICOLOGICO</B></FONT></CENTER>
+                  </TH>
+                  <TH>
+                     <CENTER><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>LEGAL</B></FONT></CENTER>
+                  </TH>
+                  <TH>
+                     <CENTER><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>MEDICO</B></FONT></CENTER>
+                  </TH>
+                  <TH>
+                     <CENTER><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>OTROS</B></FONT></CENTER>
+                  </TH>
+              </TR>   
+                        </THEAD>
+	  <TR>
+
+  <TD VALIGN=top NOWRAP BGCOLOR="#FFFFFF">
+  <P><FONT SIZE="-2" FACE="Arial">
+	<? 
+	include("Datos_Comunicacion.php");
+	$sql ="select * from campos where Tipo = 'AYUDAPSICOLOGICO' and activo=1 ORDER BY Nombre ASC";
+	$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+	$total_found = @mysql_num_rows($total_result);
+	$i=1;
+	while ($row = mysql_fetch_array($total_result)){
+		$Nombre=$row['Nombre'];
+		$Tipo=$row['Tipo'];
+    		echo '<INPUT TYPE=checkbox NAME="'.$Tipo.'['.$i.']" VALUE="'.$Nombre.'">'.$Nombre.'<BR>';
+		$i=$i+1;
+		}
+	?>
+	</FONT></P>
+      </TD>
+
+  <TD VALIGN=top NOWRAP BGCOLOR="#FFFFFF">
+  <P><FONT SIZE="-2" FACE="Arial">
+	<? 
+	include("Datos_Comunicacion.php");
+	$sql ="select * from campos where Tipo = 'AYUDALEGAL' and activo=1 ORDER BY Nombre ASC";
+	$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+	$total_found = @mysql_num_rows($total_result);
+	$i=1;
+	while ($row = mysql_fetch_array($total_result)){
+		$Nombre=$row['Nombre'];
+		$Tipo=$row['Tipo'];
+    		echo '<INPUT TYPE=checkbox NAME="'.$Tipo.'['.$i.']" VALUE="'.$Nombre.'">'.$Nombre.'<BR>';
+		$i=$i+1;
+		}
+	?>
+	</FONT></P>
+      </TD>
+
+  <TD VALIGN=top NOWRAP BGCOLOR="#FFFFFF">
+  <P><FONT SIZE="-2" FACE="Arial">
+	<? 
+	include("Datos_Comunicacion.php");
+	$sql ="select * from campos where Tipo = 'AYUDAMEDICA' and activo=1 ORDER BY Nombre ASC";
+	$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+	$total_found = @mysql_num_rows($total_result);
+	$i=1;
+	while ($row = mysql_fetch_array($total_result)){
+		$Nombre=$row['Nombre'];
+		$Tipo=$row['Tipo'];
+    		echo '<INPUT TYPE=checkbox NAME="'.$Tipo.'['.$i.']" VALUE="'.$Nombre.'">'.$Nombre.'<BR>';
+		$i=$i+1;
+		}
+	?>
+	</FONT></P>
+      </TD>
+
+  <TD VALIGN=top NOWRAP BGCOLOR="#FFFFFF">
+  <P><FONT SIZE="-2" FACE="Arial">
+	<? 
+	include("Datos_Comunicacion.php");
+	$sql ="select * from campos where Tipo = 'AYUDAOTROS' and activo=1 ORDER BY Nombre ASC";
+	$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+	$total_found = @mysql_num_rows($total_result);
+	$i=1;
+	while ($row = mysql_fetch_array($total_result)){
+		$Nombre=$row['Nombre'];
+		$Tipo=$row['Tipo'];
+    		echo '<INPUT TYPE=checkbox NAME="'.$Tipo.'['.$i.']" VALUE="'.$Nombre.'">'.$Nombre.'<BR>';
+		$i=$i+1;
+		}
+	?>
+	</FONT></P>
+      </TD>
+
+              </TR>
+            </TABLE>
+            </FONT><FONT FACE="Arial" COLOR="#FFCC00">
+            </FONT><FONT SIZE="-1" FACE="Arial" COLOR="#FFCC00"><TABLE BORDER=0 WIDTH="100%">
+               <TR>
+                  <TD WIDTH=438 BGCOLOR="#FFFFFF">
+                     <P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>Desarrollo del caso</B></FONT></P>
+                  </TD>
+               </TR>
+               <TR>
+
+<TD VALIGN=top NOWRAP WIDTH=438 BGCOLOR="#FFFFFF">
+<P><FONT SIZE="-1" FACE="Arial"><TEXTAREA NAME=DesarrolloCaso ROWS=10 COLS=56 WRAP=virtual></TEXTAREA></FONT></P>
+</TD>
+ </TR>
+</TABLE>
+<p align=center style='text-align:center'><span style='font-size:22.0pt;mso-bidi-font-size:10.0pt;font-family:Arial'>
+<a href="#" onClick="window.open('?Accion=RealizarBusquedaOrga','mywindow','height=600,width=350,scrollbars=yes,status=yes'); return false;">Busqueda de Organismos</a>
+
+             </FONT><FONT FACE="Arial" COLOR="#FFCC00">&nbsp;
+            </FONT><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B><TABLE BORDER=0 WIDTH="100%">
+               
+<TD BGCOLOR="#FFFFFF">
+<FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">
+<B>Legal</B>
+</FONT>
+</TD>
+
+<TR>
+<TD BGCOLOR="#FFFFFF">
+<P>
+<select name="selLegal" onChange="rellenaCanaLegal('forma');" id="Legal">
+
+	<option value="">-
+            	<? 
+						include("Datos_Comunicacion.php");
+						$sql ="select * from campos where Tipo = 'CanaLegal' AND Activo = 1 ORDER BY Nombre ASC";
+						$total_result = @mysql_query($sql, $connection) or die("Error #". mysql_errno() . ": " . mysql_error());
+						$total_found = @mysql_num_rows($total_result);
+						$i=1;
+						while ($row = mysql_fetch_array($total_result)){
+							$Nombre=$row['Nombre'];
+							echo '<OPTION VALUE="'.$Nombre.'":>'.$Nombre;
+							$i=$i+1;
+							}
+						?>
+                  </select>  
+	<INPUT TYPE=text NAME=CanaLegal VALUE="<?echo $Institucion2;?>" SIZE=40 MAXLENGTH=255>
+	</FONT></P>
+
+
+
+
+
+
+</TD>
+</TR>
+
+<TD BGCOLOR="#FFFFFF">
+<FONT SIZE="-1" FACE="Arial" COLOR="#c978ff">
+<B>Otro</B>
+</FONT>
+</TD>
+
+<TR>
+<TD BGCOLOR="#FFFFFF">
+<P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>
+<TEXTAREA NAME=CanaOtro ROWS=4 COLS=80 WRAP=virtual></TEXTAREA>
+</B></FONT></P>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="#FFFFFF">
+<P><FONT SIZE="-1" FACE="Arial" COLOR="#c978ff"><B>
+<INPUT TYPE=checkbox NAME=Voluntario VALUE=Voluntario>Voluntario<BR>
+</B></FONT></P>
+</TD>
+</TR>
+
+            </TABLE>
+             </B></FONT><FONT SIZE="-1" FACE="Arial" COLOR="#FFCC00">&nbsp;
+            </FONT><FONT FACE="Arial" COLOR="#FFCC00">&nbsp;
+            </FONT><TABLE BORDER=0 BGCOLOR="#FFFFFF" CELLSPACING=0 CELLPADDING=0 WIDTH="100%">
+               <TR>
+                  <TD>
+<p class=MsoNormal align=center style='text-align:center'><span style='font-family:Tahoma;'>
+Te recuerdo que mi nombre es 
+<? echo strtoupper(RevisaSesion($Sesion, "identidad"));  ?>
+<?
+    echo ' no dudes en marcar las veces que sea necesario Nuestro horario es de Lunes a Viernes de 8:00 A.M. a 8:00 P.M. Te comento que de acuerdo a la ley de protecci&oacute;n de datos personales, puedes conocer nuestro aviso de privacidad a trav&eacute;s de nuestra p&aacute;gina de internet en www.origenac.org. Recuerda que el bullying no es un juego. Estamos para escucharte. '; ?>
+<o:p></o:p></span></p>
+                     <P ALIGN=right><BR>
+                     <TABLE BORDER=0 WIDTH="100%">
+<TR><TD>
+<CENTER>
+<INPUT TYPE=submit NAME=submit VALUE="Registrar llamada">
+</CENTER>
+                           </TD>
+                       </TR>
+                     </TABLE>
+                      &nbsp;</P>
+                  </TD>
+               </TR>
+            </TABLE>
+         </TD>
+      </TR>
+   </TABLE>
+   <BR>
+   </CENTER>
+</FORM></CENTER>
+</span>
